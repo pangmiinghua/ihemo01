@@ -41,7 +41,7 @@ Migrate(app,db)
 # 将迁移脚本添加到脚本管理器
 manager.add_command("db",MigrateCommand)
 # 配置完manager后要修改Edit Configcuration中的配置才能重新跑起manager.run()
-
+111
 @app.route("/")
 def index():
 
