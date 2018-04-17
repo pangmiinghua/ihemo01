@@ -1,49 +1,13 @@
 #coding:utf-8
-import redis   #用于连接及编辑redis数据库
-from flask import Flask
+# 程序入口
+
 from flask import session
-from flask_session import Session
-from flask_wtf import CSRFProtect
-from flask_migrate import Migrate,MigrateCommand  #用于迁移 mysql数据
+from flask_migrate import Migrate,MigrateCommand #用于迁移 mysql数据
 from flask_script import Manager   #用于创建管理器管理app项目
-from flask_sqlalchemy import SQLAlchemy   #用于连接及编辑mysql数据库
-import requests
+from iHome import get_app,db
 
-class Config(object):
-    """封装配置的类"""
-    DEBUG = True
-    # 把SQLAlchemy配置上使用mysql
-    SQLALCHEMY_DATABASE_URI = "mysql://root:mysql@127.0.0.1:3306/iHome"
-
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-    # 配置redis数据库 写法结构完全是模仿Django模式来写的
-    REDIS_HOST = "127.0.0.1"
-    REDIS_PORT = 6379
-
-    # 配置密钥
-    SECRET_KEY = 'q7pBNcWPgmF6BqB6b5VICF7z7pI+90o0O4CaJsFGjzRsYiya9SEgUDytXvzFsIaR'
-
-    SESSION_TYPE = 'redis'
-    SESSION_REDIS = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT)
-    SESSION_USE_SIGNER = True
-    PERMANENT_SESSION_LIFETIME = 3600 * 2  #两小时
-
-app = Flask(__name__)
-
-# 用于加载配置参数  在写Config（）类时先写这个表明
-app.config.from_object(Config)
-# 注意：先有配置 再有创建链接到数据库的对象
-db = SQLAlchemy(app)
-
-# 开始CSRF保护：flask需要自己将csrf_token写入浏览器的cookie
-CSRFProtect(app)
-
-
-
-# 创建链接到redis数据库的对象  Config.REDIS_HOST从Config中读取REDIS_HOST
-redis_store = redis.StrictRedis(host=Config.REDIS_HOST, port=Config.REDIS_PORT)
-# 记得要开始redis数据库
+# 使用工厂设计模式创建app
+app = get_app('dev')
 
 # 用代理管理器管理app项目
 manager = Manager(app)
@@ -55,15 +19,11 @@ manager.add_command("db",MigrateCommand)
 # 配置完manager后要修改Edit Configcuration中的配置才能重新跑起manager.run()
 # 在还没有模型类，没法生成迁移
 
-
-Session(app)
-
-
 @app.route("/index" ,methods=["GET","POST"] )
 def index():
 
-    session['name'] = 'pmh'
-
+    session['name'] = 'pmh'  #怎么写了一个这家伙就可以有发送到客户端浏览器了呢？
+                                #哪里有弄一个隐藏域发送的代码体现？
     return "index"
 
 
