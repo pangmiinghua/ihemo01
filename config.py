@@ -1,6 +1,6 @@
 # coding:utf-8
 # 配置
-
+import logging
 import redis
 
 
@@ -31,7 +31,8 @@ class Config(object):
 
 class Development(Config):
     """开发模式下的配置"""
-    pass
+    # 调试级别
+    LOGGING_LEVEL = logging.DEBUG
 
 
 class Production(Config):
@@ -39,8 +40,10 @@ class Production(Config):
 
     DEBUG = False   #上线后无需再用True
     SQLALCHEMY_DATABASE_URI = 'mysql://root:mysql@127.0.0.1:3306/iHome_GZ'
-    PERMANENT_SESSION_LIFETIME = 3600 * 24 * 2  # 有效期为一天
+    PERMANENT_SESSION_LIFETIME = 3600 * 24  # 有效期为一天
 
+    # 调试级别   不同环境有不同等级
+    LOGGING_LEVEL = logging.WARN
 
 class UnitTest(Config):
     """测试环境"""
