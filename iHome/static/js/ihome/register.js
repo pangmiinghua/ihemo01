@@ -112,4 +112,57 @@ $(document).ready(function() {
     });
 
     // TODO: 注册的提交(判断参数是否为空)
+    $('.form-register').submit(function (event) {
+        // 监听表单的提交事件，并把默认的提交动作禁用掉，然后使用自己写的ajax发送注册请求
+        event.preventDefault();
+
+        // 获取手机号,短信验证码,密码和确认密码
+        var mobile = $('#mobile').val();
+        var sms_code = $('#phonecode').val();
+        var password = $('#password').val();
+        var password2 = $('#password2').val();
+
+        // 校验参数是否为空
+        if (!mobile) {
+            $('#mobile-err span').html('请输入手机号');
+            $('#mobile-err').show();
+            return;
+        }
+        if (!sms_code) {
+            $('#phone-code-err span').html('请输入短信验证码');
+            $('#phone-code-err').show();
+            return;
+        }
+        if (!password) {
+            $("#password-err span").html("请填写密码!");
+            $("#password-err").show();
+            return;
+        }
+        if (password != password2) {
+            $("#password2-err span").html("两次密码不一致!");
+            $("#password2-err").show();
+            return;
+        }
+
+        var params = {
+            'mobile':mobile,
+            'sms_code':sms_code,
+            'password':password
+        };
+
+        $.ajax({
+            url:'/api/1.0/users',
+            type:'post',
+            data:JSON.stringify(params),
+            contentType:'application/json',
+            headers:{'X-CSRFToken':getCookie('csrf_token')},
+            success:function (response) {
+                if (response.errno == '0') {
+                    location.href = '/'; // 进入主页
+                } else {
+                    alert(response.errmsg);
+                }
+            }
+        });
+    });
 })
