@@ -4,7 +4,7 @@
 from flask_migrate import Migrate,MigrateCommand #用于迁移 mysql数据
 from flask_script import Manager   #用于创建管理器管理app项目
 from iHome import get_app,db
-
+from iHome import models
 # 使用工厂设计模式创建app
 app = get_app('dev')
 
