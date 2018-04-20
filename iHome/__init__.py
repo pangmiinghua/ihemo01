@@ -45,7 +45,7 @@ def get_app(config_name):
     # db = SQLAlchemy(app)
     db.init_app(app)
     # 开始CSRF保护：flask需要自己将csrf_token写入浏览器的cookie
-    CSRFProtect(app)
+    # CSRFProtect(app)
 
     global redis_store
     # 创建链接到redis数据库的对象  Config.REDIS_HOST从Config中读取REDIS_HOST
