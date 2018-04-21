@@ -47,7 +47,8 @@ class User(BaseModel, db.Model):
         response_info_data = {
             'user_id': self.id,
             'name': self.name,
-            'avatar_url': self.avatar_url
+            'avatar_url': constants.QINIU_DOMIN_PREFIX + (self.avatar_url if self
+                                                          .avatar_url else ""),
         }
         return response_info_data
 
