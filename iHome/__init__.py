@@ -1,9 +1,6 @@
 # coding:utf-8
 # 创建应用实例  这里的代码是要用于测试的 这里相当于第一个业务逻辑
 # 这里的是业务逻辑 在项目在manager一开始执行时，会跑到iHome中的__init__初始化文件
-import logging
-from logging.handlers import RotatingFileHandler
-
 import redis   #用于连接及编辑redis数据库
 from flask import Flask    #导入Flask环境
 from flask_session import Session   #使用Session使得数据保存在数据库  而导包session用于session操作数据，数据一般在cookie
@@ -11,6 +8,8 @@ from flask_wtf import CSRFProtect   #开启保护
 from flask_sqlalchemy import SQLAlchemy   #用于连接及编辑mysql数据库
 from config import configs  #导入配置文件的“原材料”
 from iHome.utils.common import RegexConverter
+import logging
+from logging.handlers import RotatingFileHandler
 
 
 db = SQLAlchemy()

@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 # 登录注册
-
+from flask import session
 
 from . import api
 from flask import request, jsonify, current_app
@@ -8,6 +8,39 @@ import json, re
 from iHome.utils.response_code import RET
 from iHome import redis_store,db
 from iHome.models import User
+
+
+
+# 登录
+@api.route("/sessions",methods=['POST'])
+def login():
+    json_dict = request.json
+    mobile =json_dict.get('mobile')
+    password = json_dict.get('password')
+
+    if not ([mobile,password]):
+        return jsonify(errno=RET.PARAMERR,errmsg="缺少参数")
+
+    if not re.match(r'^1[345678][0-9]{9}$',mobile):
+        return jsonify(errno=RET.PARAMERR,errmsg="手机号码格式错误")
+    # 判断用户是否存在
+    try:
+        user = User.query.filter(User.mobile == mobile).first()
+    except Exception as e:
+        current_app.logging.error(e)
+        return jsonify(errno=RET.DBERR,errmsg='查询用户失败')
+    if not user:
+        return jsonify(errno=RET.USERERR,errmsg='用户名或密码错误')
+    #判断密码是否错误
+    if not user:
+        return jsonify(errno=RET.PWDERR,errmsg="用户名或密码错误")
+
+    session['user_id'] = user.id
+    session['name'] = user.name
+    session['user_mobile'] = user.mobile
+
+    return jsonify(errno=RET.OK,errmsg='登录成功')
+
 
 
 @api.route('/users', methods=['POST'])
@@ -51,6 +84,11 @@ def register():
     if sms_code_client != sms_code_server:
         return jsonify(errno=RET.PARAMERR, errmsg='短信验证码输入有误')
 
+    # 判断该手机号是否注册
+    if User.query.filter(User.mobile == mobile).first():
+        return jsonify(errno=RET.DATAEXIST, errmsg='该手机号已注册')
+
+
     # 5.如果对比成功，就创建用户模型User对象，并给属性赋值
     user = User()
     user.mobile = mobile
@@ -66,6 +104,7 @@ def register():
         current_app.logger.error(e)
         db.session.rollback()
         return jsonify(errno=RET.DBERR, errmsg='保存用户注册数据失败')
+
 
     # 7.响应注册结果
     return jsonify(errno=RET.OK, errmsg='注册成功')

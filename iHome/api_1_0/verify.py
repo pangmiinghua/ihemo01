@@ -3,9 +3,12 @@
 import random
 import re
 
-from celery import current_app
+from flask import current_app
 from flask import json
+from flask import session
 
+from iHome.models import User
+from iHome.utils.sms import CCP
 from .import api
 from flask import abort, jsonify
 from flask import make_response
@@ -13,7 +16,7 @@ from flask import request
 from iHome import redis_store,constants
 from iHome.utils.captcha.captcha import captcha
 from iHome.utils.response_code import RET
-
+import logging
 
 
 @api.route("/sms_code",methods=["POST"])
@@ -55,6 +58,12 @@ def send_sms_code():
     sms_code = '%06d'%random.randint(0,999999)
     current_app.logger.debug(sms_code)
 
+    # 6.调用单例类发送短信
+    result = CCP().send_sms_code(mobile, [sms_code, constants.SMS_CODE_REDIS_EXPIRES/60], '1')
+    if result != 1:
+        return jsonify(errno=RET.THIRDERR, errmsg='发送短信验证码失败')
+
+
     # 发短线成功，就保存短信验证码到redis数据库
     try:
         redis_store.set('SMS:%s'%mobile,sms_code,constants
@@ -88,7 +97,7 @@ def get_image_code():
         if last_uuid:
             redis_store.delete('ImageCode:%s'% last_uuid)
 
-        redis_store.set('ImageCode:%s'% last_uuid,text,constants.IMAGE_CODE_REDIS_EXPIRES)
+        redis_store.set('ImageCode:%s'% uuid,text,constants.IMAGE_CODE_REDIS_EXPIRES)
     except Exception as e :
         # print e
         current_app.logger.error(e)

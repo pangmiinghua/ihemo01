@@ -38,6 +38,18 @@ class User(BaseModel, db.Model):
     def password(self, value):  # value ：接受外界调用setter方法时传入的数据
         self.password_hash = generate_password_hash(value)
 
+    def check_password(self,password):
+        return check_password_hash(self.password_hash,password)
+
+
+    def to_dict(self):
+        """"将需要响应的数据封装到字典"""
+        response_info_data = {
+            'user_id': self.id,
+            'name': self.name,
+            'avatar_url': self.avatar_url
+        }
+        return response_info_data
 
 
 
