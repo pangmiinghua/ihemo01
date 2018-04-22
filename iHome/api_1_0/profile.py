@@ -13,6 +13,27 @@ from iHome.utils.response_code import RET
 from . import api
 from iHome.utils.common import login_required
 
+
+@api.route('/users/auth', methods=['GET'])
+@login_required
+def get_user_auth():
+    """提供实名认证数据
+    0.判断用户是否登录
+    1.查询当前登录用户user信息
+    2.构造响应的实名认证的数据
+    3.响应实名认证的数据
+    """
+    user_id = g.user_id
+    try:
+        user = User.query.get(user_id)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg='数据查询错误')
+    if not user:
+        return jsonify(errno=RET.NODATA, errmsg='用户不存在')
+    response_auth_dict = user.auth_to_dict()
+    return jsonify(errno=RET.OK, errmsg='查询用户成功',data=response_auth_dict)
+
 # 实名认证
 @api.route("/users/auth",methods=["POST"])
 @login_required

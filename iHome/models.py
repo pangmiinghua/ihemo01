@@ -53,6 +53,14 @@ class User(BaseModel, db.Model):
         }
         return response_info_data
 
+    def auth_to_dict(self):
+        """"封装实名认证响应的数据"""
+        response_auth_dict={
+            'user_id':self.id,
+            'real_name':self.real_name,
+            'id_card':self.id_card
+        }
+        return response_auth_dict
 
 
 class Area(BaseModel, db.Model):
