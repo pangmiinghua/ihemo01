@@ -14,7 +14,7 @@ from . import api
 from iHome.utils.common import login_required
 
 # 实名认证
-@api.route("/users/auth","POST")
+@api.route("/users/auth",methods=["POST"])
 @login_required
 def set_user_auth():
     """"

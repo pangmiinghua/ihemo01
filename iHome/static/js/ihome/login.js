@@ -29,7 +29,7 @@ $(document).ready(function() {
         var params = {
             'mobile':mobile,
              'password':passwd
-        }
+        };
         $.ajax({
             url:'/api/1.0/sessions',
             type:'post',
