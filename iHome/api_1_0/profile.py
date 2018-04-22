@@ -1,5 +1,7 @@
 # coding:utf-8
+# 个人中心
 from flask import current_app, jsonify
+from flask import g
 from flask import request
 from flask import session
 
@@ -10,6 +12,48 @@ from iHome.utils.image_storage import upload_image
 from iHome.utils.response_code import RET
 from . import api
 from iHome.utils.common import login_required
+
+# 实名认证
+@api.route("/users/auth","POST")
+@login_required
+def set_user_auth():
+    """"
+    实名认证
+    0.判断用户是否登录
+    1.获取实名认证参数：real_name,id_card,并判断是否为空
+    2.查询当前的登录用户user模型
+    3.将real_name,id_card赋值给user模型
+    4.保存到数据库
+    5.响应实名认证结果
+    """
+    json_dict = request.json
+    real_name = json_dict.get('real_name')
+    id_card = json_dict.get('id_card')
+    if not ([real_name,id_card]):
+        return jsonify(errno=RET.PARAMERR,errmsg='缺少参数')
+    # 在common文件自定义路由器进行判断是否登录时用g变量记录了当
+    # 用户登录时的user_id
+    user_id = g.user_id
+    try:  #因为可能会获取出错，所以用try：
+        user = User.query.get(user_id)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR,errmsg="查询用户失败")
+    if not user:
+        return jsonify(errno=RET.NODATA,errmsg="用户不存在")
+
+    user.real_name = real_name
+    user.id_card = id_card
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()  #事务回滚
+        return jsonify(errno=RET.DBERR,errmsg="保存数据失败")
+
+    return jsonify(errno=RET.OK,errmsg="认证成功")
+
 
 # 修改用户名
 @api.route("/users/name",methods=["PUT"])

@@ -53,7 +53,7 @@ def login():
 
 
 
-@api.route('/users', methods=['POST'])
+@api.route('/users',methods=['POST'])
 def register():
     """注册
     1.获取注册参数：手机号，短信验证码，密码

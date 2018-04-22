@@ -26,6 +26,7 @@ def login_required(view_func):
         if not user_id:
             return jsonify(errno=RET.SESSIONERR, errmsg='用户未登录')
         else:
+            # 当用户已登录，使用g变量记录用户的user_id，方便被装饰器的视图函数中可以直接使用
             g.user_id = user_id
             return view_func(*args ,**kwargs)
     return wraaper
