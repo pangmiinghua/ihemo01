@@ -34,7 +34,9 @@ $(document).ready(function () {
             success:function (response) {
                 if (response.errno == '0'){
                     $('#user-avatar').attr('src',response.data);
-                }else {
+                }else if(response.errno == '4101'){
+                    location .href = 'login.html';}
+                    else {
                     alert(response.errmsg);
                 }
             }

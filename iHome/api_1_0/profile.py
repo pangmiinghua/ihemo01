@@ -9,10 +9,12 @@ from iHome.models import User
 from iHome.utils.image_storage import upload_image
 from iHome.utils.response_code import RET
 from . import api
+from iHome.utils.common import login_required
 
 # 修改用户名
 @api.route("/users/name",methods=["PUT"])
-def aa():
+@login_required
+def set_user_name():
     json_dict = request.json
     new_name = json_dict.get('name')
     if not new_name:
@@ -38,7 +40,8 @@ def aa():
 
 # 上传图片
 @api.route("/users/avatar",methods=["POST"])
-def ind():
+@login_required
+def upload_avatar():
     try:
         image_data = request.files.get('avatar')
     except Exception as e:
@@ -73,8 +76,9 @@ def ind():
     avatar_url = constants.QINIU_DOMIN_PREFIX + key
     return jsonify(errno=RET.OK, errmsg="上传头像成功",data=avatar_url)
 
-# 获取以用户信息
+# 提供以用户信息
 @api.route("/users",methods=["GET"])
+@login_required
 def get_user_info():
     user_id = session.get('user_id')
 
@@ -86,6 +90,6 @@ def get_user_info():
     if not user:
         return jsonify(errno=RET.NODATA, errmsg='用户数据为空')
 
-    response_info_dict  = user.to_dict()
+    response_info_dict = user.to_dict()
 
     return jsonify(errno=RET.OK,errmsg="OK",data = response_info_dict)
