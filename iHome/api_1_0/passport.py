@@ -8,8 +8,18 @@ import json, re
 from iHome.utils.response_code import RET
 from iHome import redis_store,db
 from iHome.models import User
+from iHome.utils.common import login_required
 
 
+#退出登录
+@api.route('/sessions',methods=['DELETE'])
+@login_required
+def logout():
+    session.pop('user_id')
+    session.pop('name')
+    session.pop('user_mobile')
+
+    return jsonify(rrno=RET.OK,errmsg='退出登录成功')
 
 # 登录
 @api.route("/sessions",methods=['POST'])
