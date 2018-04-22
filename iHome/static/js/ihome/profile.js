@@ -22,7 +22,7 @@ $(document).ready(function () {
         }else {
             alert(response.errmsg)
         }
-    })
+    });
     // TODO: 管理上传用户头像表单的行为
     $('#form-avatar').submit(function (event) {
         event.preventDefault();
@@ -38,15 +38,37 @@ $(document).ready(function () {
                     alert(response.errmsg);
                 }
             }
+        });
 
-
-
-        })
-
-    })
+    });
 
 
     // TODO: 管理用户名修改的逻辑
-
-})
+    $('#form-name').submit(function (event) {
+        event.preventDefault();
+        var name = $('#user-name').val();
+        if (!name){
+            alert('请输入用户名')
+        }
+        var params = {
+            'name':name
+        };
+        $.ajax({
+            url:"/api/1.0/users/name",
+            type:"put",
+            data:JSON.stringify(params),
+            contentType:'application/json',
+            headers:{'X-CSRFToken':getCookie('csrf_token')},
+            success:function (response) {
+                if (response.errno == '0'){
+                    showSuccessMsg()
+                }else if(response.errno == '4101'){
+                    location .href = 'login.html';
+                }else {
+                    alert(response.errmsg);
+                }
+            }
+        });
+    });
+});
 

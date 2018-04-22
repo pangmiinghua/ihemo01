@@ -10,6 +10,33 @@ from iHome.utils.image_storage import upload_image
 from iHome.utils.response_code import RET
 from . import api
 
+# 修改用户名
+@api.route("/users/name",methods=["PUT"])
+def aa():
+    json_dict = request.json
+    new_name = json_dict.get('name')
+    if not new_name:
+        return jsonify(errno=RET.DATAERR,errmsg="缺少参数")
+    user_id = session.get('user_id')
+    try:
+        user = User.query.get(user_id)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR,errmsg="查询用户数据失败")
+    if not user:
+        return jsonify(errno=RET.NODATA,errmsg="用户不存在")
+
+    user.name = new_name
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR,errmsg="保存用户数据失败")
+
+    return jsonify(errno=RET.OK,errmsg="修改用户名成功")
+
+# 上传图片
 @api.route("/users/avatar",methods=["POST"])
 def ind():
     try:
@@ -46,6 +73,7 @@ def ind():
     avatar_url = constants.QINIU_DOMIN_PREFIX + key
     return jsonify(errno=RET.OK, errmsg="上传头像成功",data=avatar_url)
 
+# 获取以用户信息
 @api.route("/users",methods=["GET"])
 def get_user_info():
     user_id = session.get('user_id')
