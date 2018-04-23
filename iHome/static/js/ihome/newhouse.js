@@ -24,7 +24,43 @@ $(document).ready(function(){
     });
 
     // TODO: 处理房屋基本信息提交的表单数据
+    $('#form-house-info').submit(function (event) {
+        event.preventDefault();
 
+        var params = {};   //定义字典    map函数是对其循环
+        $(this).serializeArray().map(function (obj) {
+            params[obj.name] = obj.value;
+        });
+
+        facilities = [];  //定义列表
+        // params['title'] = title;
+        // 收集界面中所有被选中的checkbox，而且name必须等于facility
+        $(':checkbox:checked[name=facility]').each(function (i,elem) {
+            facilities[i] = elem.value;    //往列表添加元素的格式
+        });
+        params['facility'] = facilities;
+        console.log(params);
+
+        $.ajax({
+            url:'/api/1.0/houses',
+            type:'post',
+            data:JSON.stringify(params),
+            contentType:'application/json',
+            headers:{'X-CSRFToken':getCookie('csrf_token')},
+            success:function (response) {
+                if (response.errno == '0'){
+                    $('#form-house-info').hide();
+                    $('#form-house-image').show();
+                    //将发布成功的house_id渲染到界面上
+                    $('#house-id').val(response.data.house_id);
+                }else if(response.errno == '4101'){
+                    location.href = 'login.html'
+                }else {
+                    alert(response.errmsg);
+                }
+            }
+        });
+
+    });
     // TODO: 处理图片表单的数据
-
-})
+});

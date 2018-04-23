@@ -41,9 +41,9 @@
                             <select class="form-control" id="area-id" name="area_id">
                             </select>
                             <script id="areas-tmpl" type="text/html">
-                                {{each areas as area}}
-                                <option value="{{area.aid}}">{{area.aname}}</option>
-                                {{/each}}
+                                {{ each areas as area }}
+                                    <option value="{{area.aid}}">{{area.aname}}</option>
+                                {{ /each }}
                             </script>
 
                         </div>
