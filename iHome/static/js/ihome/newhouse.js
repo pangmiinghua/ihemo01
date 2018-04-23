@@ -63,4 +63,23 @@ $(document).ready(function(){
 
     });
     // TODO: 处理图片表单的数据
+    $('#form-house-image').submit(function (event) {
+        event.preventDefault();
+
+        $(this).ajaxSubmit({
+            url:"/api/1.0/houses/image",
+            type:'post',
+            headers:{'X-CSRFToken':getCookie('csrf_token')},
+            success:function (response) {
+                if (response.errno == '0'){
+                    $('.house-image-cons').append('<img src="'+response.data.house_image_url+'">')
+                }else if (response.errno == '4101'){
+                    location.href = "/";
+                }else {
+                    alert(response.errmsg);
+                }
+            }
+        });
+    });
 });
+
