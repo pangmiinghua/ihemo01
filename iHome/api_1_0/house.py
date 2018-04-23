@@ -12,6 +12,25 @@ from iHome.utils.common import login_required
 from flask import current_app,jsonify
 
 
+
+
+@api.route('/houses/<int:house_id>',methods=['GET'])
+def n(house_id):
+    """通过房屋id查看房屋详情"""
+    try:
+        house = House.query.get(house_id)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR,errmsg='查询房屋数据失败')
+    if not house:
+        return jsonify(errno=RET.NODATA,errmsg='房屋不存在')
+    #构造房屋详情响应数据  ？
+    response_dict = house.to_full_dict()
+
+    return jsonify(errno=RET.OK,errmsg='OK',data=response_dict)
+
+
+
 @api.route('/houses/image',methods=['POST'])
 @login_required
 def upload_house_image():
