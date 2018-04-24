@@ -11,6 +11,16 @@ from iHome.models import User
 from iHome.utils.common import login_required
 
 
+# 判断用户是否登录，获取session信息--用户id和名字
+@api.route('/sessions',methods=["GET"])
+def check_login():
+    user_id = session.get('user_id')
+    name = session.get('name')
+
+    return jsonify(errno=RET.OK,errmsg='OK',
+                   data={'user_id':user_id,'name':name})
+
+
 #退出登录
 @api.route('/sessions',methods=['DELETE'])
 @login_required

@@ -1,6 +1,7 @@
 # coding:utf-8
 from flask import g
 from flask import request
+from flask import session
 
 from iHome import constants
 from iHome import db
@@ -12,8 +13,46 @@ from iHome.utils.common import login_required
 from flask import current_app,jsonify
 
 
+# @api.route("/houses/search",methods=['GET'])
+# def m ():
+#     """"查询所有房屋信息"""
+#     # 在数据库拿出所有房屋信息
+#     try:
+#         houses = House.query.all()
+#
+#     except Exception as e:
+#         current_app.logger.error(e)
+#         return jsonify(errno=RET.DATAERR,errmsg='查询房屋数据失败')
+#
+#     house_dict_list = []
+#     for house in houses:
+#         house_dict_list.append(house.to_basic_dict())
+#         return jsonify(errno=RET.OK,errmsg='OK',data=house_dict_list)
 
 
+# 主页房屋推荐：推荐最新发布的五个房屋
+@api.route('/houses/index',methods=['GET'])
+def get_house_index():
+    """主页房屋推荐:推荐最新发布的五个房屋
+        1.直接查询最新发布的五个房屋：根据创建的时间倒叙，取最前面五个
+        2.构造房屋推荐数据
+        3.响应房屋推荐数据
+        """
+    try:
+        houses = House.query.order_by(House.create_time.desc()).\
+            limit(constants.HOME_PAGE_MAX_HOUSES)
+    except Exception as e:
+        current_app.loger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg='查询房屋推荐数据失败')
+    # 构造房屋推荐数据
+    house_dict_list = []
+    for house in houses:
+        house_dict_list.append(house.to_basic_dict())  #调用model处的函数把
+
+    return jsonify(errno=RET.OK, errmsg='OK', data=house_dict_list)
+
+
+# """通过房屋id查看房屋详情"""
 @api.route('/houses/<int:house_id>',methods=['GET'])
 def n(house_id):
     """通过房屋id查看房屋详情"""
@@ -25,9 +64,13 @@ def n(house_id):
     if not house:
         return jsonify(errno=RET.NODATA,errmsg='房屋不存在')
     #构造房屋详情响应数据  ？
-    response_dict = house.to_full_dict()
+    # response_dict = house.to_full_dict()
+    response_house_detail = house.to_full_dict()
+    # 尝试获取登录用户信息：可能是未登录的
+    login_user_id = session.get('user_id', -1)
 
-    return jsonify(errno=RET.OK,errmsg='OK',data=response_dict)
+    return jsonify(errno=RET.OK,errmsg='OK',
+                   data=response_house_detail,login_user_id = login_user_id)
 
 
 
