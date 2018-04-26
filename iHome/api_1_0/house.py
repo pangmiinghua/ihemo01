@@ -3,7 +3,7 @@ from flask import g
 from flask import request
 from flask import session
 
-from iHome import constants
+from iHome import constants, redis_store
 from iHome import db
 from iHome.models import Area, House, Facility, HouseImage
 from iHome.utils.image_storage import upload_image
@@ -13,21 +13,48 @@ from iHome.utils.common import login_required
 from flask import current_app,jsonify
 
 
-# @api.route("/houses/search",methods=['GET'])
-# def m ():
-#     """"查询所有房屋信息"""
-#     # 在数据库拿出所有房屋信息
-#     try:
-#         houses = House.query.all()
-#
-#     except Exception as e:
-#         current_app.logger.error(e)
-#         return jsonify(errno=RET.DATAERR,errmsg='查询房屋数据失败')
-#
-#     house_dict_list = []
-#     for house in houses:
-#         house_dict_list.append(house.to_basic_dict())
-#         return jsonify(errno=RET.OK,errmsg='OK',data=house_dict_list)
+
+
+
+
+
+@api.route("/houses/search",methods=['GET'])
+def get_house_search():
+    """"查询所有房屋信息
+    需求1：无条件查询所有的房屋数据
+    需求2：根据城区搜索房屋
+    0.获取搜索使用的参数
+    1.直接查询所有房屋数据
+    2.构造房屋数据
+    3.响应房屋数据
+    """
+    # 在数据库拿出所有房屋信息
+
+    # 获取城区信息
+    aid = request.args.get('aid')
+
+    # sk = request.args.get('sk','')
+    # current_app.logger.error(sk)
+
+
+    try:
+        # 得到BeseQuery对象
+        house_query = House.query
+        # 根据城区信息搜索房屋
+        if aid:
+            house_query = house_query.filter(House.area_id == aid)
+        houses = house_query.all()
+
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DATAERR,errmsg='查询房屋数据失败')
+
+    house_dict_list = []
+    for house in houses:
+        house_dict_list.append(house.to_basic_dict())
+
+
+    return jsonify(errno=RET.OK,errmsg='OK',data=house_dict_list)
 
 
 # 主页房屋推荐：推荐最新发布的五个房屋
@@ -54,7 +81,7 @@ def get_house_index():
 
 # """通过房屋id查看房屋详情"""
 @api.route('/houses/<int:house_id>',methods=['GET'])
-def n(house_id):
+def get_house_detail(house_id):
     """通过房屋id查看房屋详情"""
     try:
         house = House.query.get(house_id)
@@ -77,7 +104,7 @@ def n(house_id):
 @api.route('/houses/image',methods=['POST'])
 @login_required
 def upload_house_image():
-    """"图片上传，会根据是什么房屋的图片--要房屋house_id
+    """图片上传，会根据是什么房屋的图片--要房屋house_id
     如果都无误则返结果回去"""
     try:
         image_data = request.files.get('house_image')
@@ -98,7 +125,7 @@ def upload_house_image():
         return jsonify(errno=RET.NODATA,errmsg='房屋不存在')
 
     #若查到有此id对应的房屋，则可以上传图片
-    try:  #上传图片到七牛云   怎么由七牛云拿到浏览器渲染？
+    try:  #上传图片到七牛云   怎么由七牛云拿到浏览器渲染？ 在前端代码写上下载图片的地址
         key = upload_image(image_data)
     except Exception as e:
         current_app.logger.error(e)
@@ -200,21 +227,66 @@ def pub_house():
 
 @api.route('/areas',methods=["GET"])
 def get_areas():
-    """提供城区信息
+    """提供城区信息    将城区信息提供给主页的中的   需要一个列表：向视图
     1.直接查询所有城区信息
     2.构造城区信息响应数据
     3.响应城区信息
     """
+
+    # 在查询数据库之前读取缓存的城区信息
+    # 现在的代码形式：
     try:
-        areas = Area.query.all()  #获取所有城区信息
+        area_dict_list = redis_store.get('Areas')   #查
+        if area_dict_list:
+            return jsonify(errno=RET.OK, errmsg='OK', data=eval(area_dict_list))
+    except Exception as e:
+        current_app.logger.error(e)
+
+
+
+    # 原来的代码形式：
+    try:
+        areas = Area.query.all()  #获取所有城区信息   areas里面存的是Area的模型对象
     except Exception as e:
         current_app.logger.error(e)
         return jsonify(errno=RET.DBERR,errmsg='查询地区数据失败')
+
+    # 2、构造城区信息响应数据，将aresa转成字典列表
     area_dict_list = []
     for area in areas:
         area_dict_list.append(area.to_dict())
+
+    try:      #键：Areas    值：area_dict_list     缓存时间：constants.AREA_INFO_REDIS_EXPIRES
+        redis_store.set("Areas",area_dict_list,constants.AREA_INFO_REDIS_EXPIRES)
+    except Exception as e:
+        current_app.logger.error(e)
+
+    # 响应城区信息：jsonify只认识字典或字典列表，所以把data中的内容都转换成了字典列表
     return jsonify(errno=RET.OK,errmsg='OK',data=area_dict_list)
 
 
 
 
+# 在做视图时先看是用户发什么请求：post  get   put  delede
+# 对于返回去jsonify是字典或字典列表
+
+# 数据，有关系型和非关系型，编程语言用它们。通过映射关系，django中通过ROM操作
+# mysql，flask中通过    操作mysql，，它们储存的方式由自身类型决定，而在取出用时
+# 可以随意拼接成不同形式，如字典、如列表、字典列表、、、多种多样，数据同时还可通过各种
+# 函数转换，得到不同类型从而便于被特定的情况使用，如jsonify中要的是字典或字典列表
+
+# 另非关系型如redis：储存是键值对，那样取的时候也是一样，也可拼接。
+# redis_store.set("Areas",area_dict_list)
+
+
+# 数据有获取和写入
+# redis_store  用写入：set:存储字符串。hset：存储hash。lpush:列表   获取：
+# mysql：db.session.set/get
+#       :db.session.commit()
+
+# 对于get请求：
+#         把数据进行构造成字典或字典列表   再返回
+#             其中构造部分有的可以在model中写（利用代码高内聚），视图中调用
+
+# post请求有的是修改数据，或是传入数据，这时是先判断数据是否合法，接下是
+# 看什么情况存在redis/mysql   再返回

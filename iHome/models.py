@@ -43,7 +43,7 @@ class User(BaseModel, db.Model):
 
     # 在models处写这些代码而不在视图，主要原因是封装，代码的高内聚
     def to_dict(self):
-        """"将需要响应的数据封装到字典"""
+        """将需要响应的数据封装到字典"""
         response_info_data = {
             'user_id': self.id,
             'name': self.name,
