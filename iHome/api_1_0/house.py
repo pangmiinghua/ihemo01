@@ -1,11 +1,12 @@
 # coding:utf-8
+import datetime
 from flask import g
 from flask import request
 from flask import session
 
 from iHome import constants, redis_store
 from iHome import db
-from iHome.models import Area, House, Facility, HouseImage
+from iHome.models import Area, House, Facility, HouseImage, Order
 from iHome.utils.image_storage import upload_image
 from iHome.utils.response_code import RET
 from . import api
@@ -39,8 +40,24 @@ def get_house_search():
     # 获取用户要看的页码
     p = request.args.get('p')
     # 校验参数   因为用户可能输其它数据：如uyutewtr
+
+    sd = request.args.get('sd', '')
+    ed = request.args.get('ed', '')
+
+    start_data = None
+    end_data = None
+
     try:
         p = int(p)
+
+        if sd:
+            start_data = datetime.datetime.strptime(sd, '%Y-%m-%d')
+        if ed:
+            end_data = datetime.datetime.strptime(ed, '%Y-%m-%d')
+
+        if start_data and end_data:
+            assert start_data < end_data, Exception('入住时间有误')
+
     except Exception as e:
         current_app.logger.error(e)
         return jsonify(errno=RET.PARAMERR, errmsg='参数错误')
@@ -50,24 +67,42 @@ def get_house_search():
         # 得到BeseQuery对象  这一步是先获得所有房源BeseQuery对象
         house_query = House.query
 
-
-        #进行判断数据按排序规则筛选房屋信息
-        if sk == 'booking':  #根据订单量由高到低
-            house_query = house_query.order_by(House.order_count.desc())
-
-        elif sk == 'price-inc':  #价格由低到高
-            house_query = house_query.order_by(House.price.asc())
-
-        elif sk == 'price-des':  #价格由高到低
-            house_query = house_query.order_by(House.order_count.desc())
-        else:  #根据发布时间倒序
-            house_query = house_query.order_by(House.create_time.desc())
-
-
         # 根据城区信息搜索房屋
         if aid:     #这里进行了一个判断：若是客户有按城区信息来搜索，则走这
             # House.area_id == aid 查所有数据库中房屋id与aid相同的，把它拿出来
             house_query = house_query.filter(House.area_id == aid)
+
+
+
+        conflict_orders = []
+        # 根据用户选中的入住和离开时间，筛选出对应的房屋信息
+        # （需要将已经在订单中的时间冲突的房屋过滤掉）
+        if start_data and end_data:
+            conflict_orders = Order.query.filter(end_data > Order.begin_date, start_data < Order.end_date).all()
+        elif start_data:
+            conflict_orders = Order.query.filter(start_data < Order.end_date).all()
+        elif end_data:
+            conflict_orders = Order.query.filter(end_data > Order.begin_date).all()
+
+        # 当发现有时间冲突的房屋时，才需要筛选出来
+        if conflict_orders:
+            conflict_house_ids = [order.house_id for order in conflict_orders]
+
+            house_query = house_query.filter(House.id.notin_(conflict_house_ids))
+
+
+        # 进行判断数据按排序规则筛选房屋信息
+        if sk == 'booking':  # 根据订单量由高到低
+            house_query = house_query.order_by(House.order_count.desc())
+
+        elif sk == 'price-inc':  # 价格由低到高
+            house_query = house_query.order_by(House.price.asc())
+
+        elif sk == 'price-des':  # 价格由高到低
+            house_query = house_query.order_by(House.order_count.desc())
+        else:  # 根据发布时间倒序
+            house_query = house_query.order_by(House.create_time.desc())
+
 
         # 取出筛选后的所有数据
         # houses = house_query.all()
