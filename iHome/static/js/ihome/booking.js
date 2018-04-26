@@ -68,4 +68,41 @@ $(document).ready(function(){
     });
 
     // TODO: 订单提交
+    //给'提交订单'的span标签，添加点击事件，并监听
+    $('.submit-btn').on('click',function () {
+
+        //获取input标签中的入住和离开时间
+        var stsrt_data = $('#start-date').val();
+        var end_data = $('#end-date').val();
+        if (!stsrt_data){
+            alert("请输入入住时间");
+            return;
+        }
+        if (!end_data){
+            alert('请输入离开时间');
+            return;
+        }
+        var params = {
+            'house_id':houseId,
+            'start_data':stsrt_data,
+            'end_data':end_data
+        };
+        $.ajax({
+            url: '/api/1.0/orders',
+            type: 'post',
+            data: JSON.stringify(params),
+            contentType: 'application/json',
+            headers: {'X-CSRFToken':getCookie('csrf_token')},
+            success:function (response) {
+                if (response.errno == '0') {
+                    // 提交订单成功，进入"我的订单"
+                    location.href = 'orders.html';
+                } else if (response.errno == '4101') {
+                    location.href = 'login.html';
+                } else {
+                    alert(response,errmsg);
+                }
+            }
+        });
+    });
 });
