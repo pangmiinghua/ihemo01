@@ -15,7 +15,7 @@ from iHome.utils.common import login_required
 @api.route('/orders',methods=['GET'])
 @login_required
 def get_order_list():
-    """我的订单，客户订单
+    """我的订单，客户订单  两个都在一个接口查
         0.判断用户是否登录
         1.获取当前登录用户的user_id
         2.使用user_id查询用户的所有的订单信息
@@ -23,24 +23,24 @@ def get_order_list():
         4.响应数据
         """
     # 接受用户身份信息
-    # role = request.args.get('role')
-    # if role not in ['custom', 'landlord']:
-    #     return jsonify(errno=RET.PARAMERR, errmsg='用户身份错误')
+    role = request.args.get('role')
+    if role not in ['custom', 'landlord']:
+        return jsonify(errno=RET.PARAMERR, errmsg='用户身份错误')
 
     # 1.获取当前登录用户的user_id
     user_id = g.user_id
 
     # 2.使用user_id查询用户的所有的订单信息
     try:
-        # if role == 'custom': # 查询我的订单：我下了谁的订单
-        orders = Order.query.filter(Order.user_id==user_id)
-        # else:  # 客户订单：查询谁下了我的订单
-        #     # 获取该用户发布的房屋
-        #     houses = House.query.filter(House.user_id == user_id).all()
-        #     # 收集发布的房屋的house_ids
-        #     house_ids = [house.id for house in houses]
-        #     # 将在订单中的房屋对应的订单查询出来
-        #     orders = Order.query.filter(Order.house_id.in_(house_ids)).all()
+        if role == 'custom': # 查询我的订单：我下了谁的订单
+            orders = Order.query.filter(Order.user_id==user_id).all()
+        else:  # 客户订单：查询谁下了我的订单
+            # 获取该用户发布的房屋
+            houses = House.query.filter(House.user_id == user_id).all()
+            # 收集发布的房屋的house_ids
+            house_ids = [house.id for house in houses]
+            # 将在订单中的房屋对应的订单查询出来
+            orders = Order.query.filter(Order.house_id.in_(house_ids)).all()
     except Exception as e:
         current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg='查询用户订单数据失败')
