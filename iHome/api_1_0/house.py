@@ -32,18 +32,36 @@ def get_house_search():
 
     # 获取城区信息
     aid = request.args.get('aid')
-
-    # sk = request.args.get('sk','')
-    # current_app.logger.error(sk)
-
+    # 获取排序信息
+    sk = request.args.get('sk','')
+    current_app.logger.error(sk)
 
     try:
-        # 得到BeseQuery对象
+        # 得到BeseQuery对象  这一步是先获得所有房源BeseQuery对象
         house_query = House.query
+
+
+        #进行判断数据按排序规则筛选房屋信息
+        if sk == 'booking':  #根据订单量由高到低
+            house_query = house_query.order_by(House.order_count.desc())
+
+        elif sk == 'price-inc':  #价格由低到高
+            house_query = house_query.order_by(House.price.asc())
+
+        elif sk == 'price-des':  #价格由高到低
+            house_query = house_query.order_by(House.order_count.desc())
+        else:  #根据发布时间倒序
+            house_query = house_query.order_by(House.create_time.desc())
+
+
         # 根据城区信息搜索房屋
-        if aid:
+        if aid:     #这里进行了一个判断：若是客户有按城区信息来搜索，则走这
+            # House.area_id == aid 查所有数据库中房屋id与aid相同的，把它拿出来
             house_query = house_query.filter(House.area_id == aid)
-        houses = house_query.all()
+
+
+        houses = house_query.all()    #查询出所有的房屋信息
+
 
     except Exception as e:
         current_app.logger.error(e)
@@ -267,6 +285,8 @@ def get_areas():
 
 
 
+# 三个模块  注册登录模块   用户    订单
+
 # 在做视图时先看是用户发什么请求：post  get   put  delede
 # 对于返回去jsonify是字典或字典列表
 
@@ -290,3 +310,8 @@ def get_areas():
 
 # post请求有的是修改数据，或是传入数据，这时是先判断数据是否合法，接下是
 # 看什么情况存在redis/mysql   再返回
+
+
+
+
+# 现在房屋进行价格高到低排序出问题
