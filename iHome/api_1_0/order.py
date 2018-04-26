@@ -11,6 +11,57 @@ from . import api
 from iHome.utils.common import login_required
 
 
+@api.route('/orders/<order_id>',methods=['POST'])
+@login_required
+def set_order_status(order_id):
+    """
+    接单，拒单   两个查询用一个接口
+        0.判断用户是否登录
+        1.根据order_id查询订单信息,需要指定订单状态为"待接单"
+        2.判断当前登录是否是否是该订单中的房屋的房东
+        3.修改订单状态为"已接单"
+        4.保存到数据库
+        5.响应结果
+    """
+    # 获取是接单还是拒单的操作
+    action = request.args.get('action')
+    if action not in ['accept', 'reject']:
+        return jsonify(errno=RET.PARAMERR, errmsg='参数错误')
+
+    # 1.根据order_id查询订单信息
+    try:
+        order = Order.query.filter(Order.id == order_id, Order.status == 'WAIT_ACCEPT').first()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg='查询订单数据失败')
+    if not order:
+        return jsonify(errno=RET.NODATA, errmsg='订单不存在')
+
+    # 2.判断当前登录是否是否是该订单中的房屋的房东
+    login_user_id = g.user_id
+    landlord_user_id = order.house.user_id
+    if login_user_id != landlord_user_id:
+        return jsonify(errno=RET.ROLEERR, errmsg='用户身份信息错误')
+
+    # 3.修改订单状态为"已接单"
+    if action == 'accept':
+        order.status = 'WAIT_COMMENT'
+    else:  # 拒单：修改订单状态为"已拒单",保存拒单理由
+        order.status = 'REJECTED'
+        reason = request.json.get('reason')
+        if reason:
+            order.comment = reason
+
+    # 4.保存到数据库
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg='保存订单状态到数据库失败')
+
+    # 5.响应结果
+    return jsonify(errno=RET.OK, errmsg='OK')
+
 
 @api.route('/orders',methods=['GET'])
 @login_required
