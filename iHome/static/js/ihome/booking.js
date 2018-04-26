@@ -100,7 +100,7 @@ $(document).ready(function(){
                 } else if (response.errno == '4101') {
                     location.href = 'login.html';
                 } else {
-                    alert(response,errmsg);
+                    alert(response.errmsg);
                 }
             }
         });
