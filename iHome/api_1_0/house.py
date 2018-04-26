@@ -36,6 +36,16 @@ def get_house_search():
     sk = request.args.get('sk','')
     current_app.logger.error(sk)
 
+    # 获取用户要看的页码
+    p = request.args.get('p')
+    # 校验参数   因为用户可能输其它数据：如uyutewtr
+    try:
+        p = int(p)
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.PARAMERR, errmsg='参数错误')
+
+
     try:
         # 得到BeseQuery对象  这一步是先获得所有房源BeseQuery对象
         house_query = House.query
@@ -59,20 +69,32 @@ def get_house_search():
             # House.area_id == aid 查所有数据库中房屋id与aid相同的，把它拿出来
             house_query = house_query.filter(House.area_id == aid)
 
-
-        houses = house_query.all()    #查询出所有的房屋信息
+        # 取出筛选后的所有数据
+        # houses = house_query.all()
+        # 使用分页查询指定条数的数据：参数1是要读取的页面 2是每页数据条数 3是默认有错不输出
+        paginate = house_query.paginate(p,constants.HOUSE_LIST_PAGE_CAPACITY,False)
+        # 获取当前页的模型对象
+        houses = paginate.items
+        # 获取总页数
+        total_page = paginate.pages
 
 
     except Exception as e:
         current_app.logger.error(e)
         return jsonify(errno=RET.DATAERR,errmsg='查询房屋数据失败')
-
+    # 构造房屋数据
     house_dict_list = []
     for house in houses:
         house_dict_list.append(house.to_basic_dict())
 
+    # 重新构造响应数据
+    response_dict = {
+        'house': house_dict_list,  #每一页的数据
+        'total_page':total_page
+    }
 
-    return jsonify(errno=RET.OK,errmsg='OK',data=house_dict_list)
+
+    return jsonify(errno=RET.OK,errmsg='OK',data=response_dict)
 
 
 # 主页房屋推荐：推荐最新发布的五个房屋

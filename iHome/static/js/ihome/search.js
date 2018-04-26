@@ -38,26 +38,34 @@ function updateHouseData(action) {
     var endDate = $("#end-date").val();
     var sortKey = $(".filter-sort>li.active").attr("sort-key");
     var params = {
-        aid:areaId,
-        sd:startDate,
-        ed:endDate,
-        sk:sortKey,
-        p:next_page
+        aid:areaId,      // 房屋id
+        sd:startDate,    //入住时间
+        ed:endDate,      //离开时间
+        sk:sortKey,      //搜索房屋的条件
+        p:next_page      //下一个页面
     };
     // TODO: 获取房屋列表信息
     $.get('/api/1.0/houses/search',params,function (response) {
+        //1、当得到响应后，需要取消正在加载数据的标识
+        house_data_querying = false;
+
         if (response.errno == '0'){
-            var html = template("house-list-tmpl",{'houses':response.data});
-            $('.house-list').html(html);
+            //2、当后端分页成功后，需要将总页数传给前端 total_page
+            total_page = response.data.total_page;
+            //进行渲染搜索页面
+            var html = template('house-list-tmpl',{'houses':response.data.house});
+
+            if (action=='renew'){   //对直接刷新的情况
+                $('.house-list').html(html);   //重新刷新一页数据 因为是renwe 相当于直接刷新
+            }else {   //对有分页的情况
+                cur_page = next_page;
+                //分页后的下一页拼接到上一页的后面  用append（），而不是html（）---html无法拼接，会把上一页直接给丢了
+                $('.house-list').append(html);
+            }
         }else {
             alert(response.errmsg );
         }
-
     });
-
-
-
-
 }
 
 $(document).ready(function(){
@@ -100,10 +108,10 @@ $(document).ready(function(){
                 var c = document.documentElement.scrollTop==0? document.body.scrollHeight : document.documentElement.scrollHeight;
                 // 如果滚动到接近窗口底部
                 if(c-b<windowHeight+50){
-                    // 如果没有正在向后端发送查询房屋列表信息的请求
-                    if (!house_data_querying) {
+                    // 如果没有正在向后端发送查询房屋列表信息的请求    因为有时会网速比较慢，还没获取完数据时设置它不能获取下一页数据
+                    if (!house_data_querying) {    //所以当每页数据加载完就记为false，不然进不来
                         // 将正在向后端查询房屋列表信息的标志设置为真
-                        house_data_querying = true;
+                        house_data_querying = true;          //向后台获取数据，就可以获取下一页
                         // 如果当前页面数还没到达总页数
                         if(cur_page < total_page) {
                             // 将要查询的页数设置为当前页数加1
